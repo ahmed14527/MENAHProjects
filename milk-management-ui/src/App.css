@@ -1,0 +1,83 @@
+/* App.css */
+.app-container {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  text-align: center;
+}
+
+header {
+  background-color: #4CAF50;
+  padding: 10px;
+  color: white;
+}
+
+header h1 {
+  margin: 0;
+}
+
+nav {
+  margin-top: 20px;
+}
+
+nav a {
+  text-decoration: none;
+  color: white;
+  margin: 0 15px;
+}
+
+button {
+  padding: 10px 15px;
+  background-color: #f44336;
+  border: none;
+  color: white;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+button:hover {
+  background-color: #d32f2f;
+}
+
+.login-form-container {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.input-group {
+  margin-bottom: 15px;
+}
+
+.input-group label {
+  display: block;
+  font-size: 14px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+button[type="submit"] {
+  background-color: #4CAF50;
+  border: none;
+  padding: 10px 15px;
+  color: white;
+  cursor: pointer;
+}
+
+button[type="submit"]:hover {
+  background-color: #45a049;
+}
+
+.error {
+  color: red;
+  font-size: 14px;
+  margin-top: 10px;
+}
