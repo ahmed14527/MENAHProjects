@@ -5,7 +5,15 @@ from .models import Baby, FacePhoto, FootPrint, RetinaPrint, MotherID, Mother, N
 from .serializers import BabySerializer, FacePhotoSerializer, FootPrintSerializer, RetinaPrintSerializer, MotherIDSerializer, MotherSerializer, NurseSerializer, ParentSerializer
 from .models import QRCode
 from .serializers import QRCodeSerializer
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes
+from accounts.permissions import IsNurseOrReadOnly,IsAdmin,IsNurse,IsParent
+
 # --- Baby Views ---
+
+
+@permission_classes([IsNurse])
+@permission_classes([IsAuthenticated])
 @api_view(['POST'])
 def create_baby(request):
     if request.method == 'POST':
@@ -17,6 +25,7 @@ def create_baby(request):
 
 
 # --- FacePhoto Views ---
+@permission_classes([IsNurse])
 @api_view(['POST'])
 def upload_face_photo(request):
     if request.method == 'POST':
@@ -25,14 +34,17 @@ def upload_face_photo(request):
             new_photo = serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
+@permission_classes([IsNurse])
 @api_view(['GET'])
 def get_all_face_photos(request):
     if request.method == 'GET':
         photos = FacePhoto.objects.all()
         serializer = FacePhotoSerializer(photos, many=True)
         return Response(serializer.data)
-
+    
+    
+@permission_classes([IsNurse])
 @api_view(['GET'])
 def get_face_photo(request, photo_id):
     try:
@@ -43,7 +55,7 @@ def get_face_photo(request, photo_id):
     if request.method == 'GET':
         serializer = FacePhotoSerializer(photo)
         return Response(serializer.data)
-
+@permission_classes([IsNurse])
 @api_view(['DELETE'])
 def delete_face_photo(request, photo_id):
     try:
@@ -57,6 +69,7 @@ def delete_face_photo(request, photo_id):
 
 
 # --- FootPrint Views ---
+@permission_classes([IsNurse])
 @api_view(['POST'])
 def upload_foot_print(request):
     if request.method == 'POST':
@@ -68,6 +81,7 @@ def upload_foot_print(request):
 
 
 # --- RetinaPrint Views ---
+@permission_classes([IsNurse])
 @api_view(['POST'])
 def upload_retina_print(request):
     if request.method == 'POST':
@@ -79,6 +93,7 @@ def upload_retina_print(request):
 
 
 # --- MotherID Views ---
+@permission_classes([IsNurse])
 @api_view(['POST'])
 def upload_mother_id(request):
     if request.method == 'POST':
@@ -90,6 +105,7 @@ def upload_mother_id(request):
 
 
 # --- Mother Views ---
+@permission_classes([IsNurse])
 @api_view(['POST'])
 def create_mother(request):
     if request.method == 'POST':
@@ -98,14 +114,16 @@ def create_mother(request):
             new_mother = serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
+@permission_classes([IsNurse])
 @api_view(['GET'])
 def get_all_mothers(request):
     if request.method == 'GET':
         mothers = Mother.objects.all()
         serializer = MotherSerializer(mothers, many=True)
         return Response(serializer.data)
-
+    
+@permission_classes([IsNurse])
 @api_view(['GET'])
 def get_mother_by_id(request, pk):
     try:
@@ -116,7 +134,9 @@ def get_mother_by_id(request, pk):
     if request.method == 'GET':
         serializer = MotherSerializer(mother)
         return Response(serializer.data)
-
+    
+    
+@permission_classes([IsNurse])
 @api_view(['PUT'])
 def update_mother(request, pk):
     try:
@@ -130,7 +150,9 @@ def update_mother(request, pk):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
+    
+@permission_classes([IsNurse])
 @api_view(['DELETE'])
 def delete_mother(request, pk):
     try:
@@ -144,6 +166,7 @@ def delete_mother(request, pk):
 
 
 # --- Nurse Views ---
+@permission_classes([IsNurse])
 @api_view(['POST'])
 def create_nurse(request):
     if request.method == 'POST':
@@ -152,14 +175,16 @@ def create_nurse(request):
             nurse = serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
+@permission_classes([IsNurse])
 @api_view(['GET'])
 def get_all_nurses(request):
     if request.method == 'GET':
         nurses = Nurse.objects.all()
         serializer = NurseSerializer(nurses, many=True)
         return Response(serializer.data)
-
+    
+@permission_classes([IsNurse])
 @api_view(['PATCH'])
 def approve_nurse(request, pk):
     try:
@@ -172,7 +197,8 @@ def approve_nurse(request, pk):
         nurse.save()
         serializer = NurseSerializer(nurse)
         return Response(serializer.data)
-
+    
+@permission_classes([IsNurse])
 @api_view(['DELETE'])
 def delete_nurse(request, pk):
     try:
@@ -186,6 +212,7 @@ def delete_nurse(request, pk):
 
 
 # --- Parent Views ---
+@permission_classes([IsNurse])
 @api_view(['POST'])
 def create_parent(request):
     if request.method == 'POST':
@@ -194,14 +221,17 @@ def create_parent(request):
             parent = serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
+@permission_classes([IsNurse])
 @api_view(['GET'])
 def get_all_parents(request):
     if request.method == 'GET':
         parents = Parent.objects.all()
         serializer = ParentSerializer(parents, many=True)
         return Response(serializer.data)
-
+    
+    
+@permission_classes([IsNurse])
 @api_view(['GET'])
 def get_parent_by_id(request, pk):
     try:
@@ -212,7 +242,8 @@ def get_parent_by_id(request, pk):
     if request.method == 'GET':
         serializer = ParentSerializer(parent)
         return Response(serializer.data)
-
+    
+@permission_classes([IsNurse])
 @api_view(['PUT'])
 def update_parent(request, pk):
     try:
@@ -226,7 +257,8 @@ def update_parent(request, pk):
             updated_parent = serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
+@permission_classes([IsNurse])
 @api_view(['DELETE'])
 def delete_parent(request, pk):
     try:
@@ -240,7 +272,7 @@ def delete_parent(request, pk):
 
 
 
-
+@permission_classes([IsNurse])
 @api_view(['POST'])
 def create_qr_code(request):
     serializer = QRCodeSerializer(data=request.data)
@@ -249,12 +281,16 @@ def create_qr_code(request):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+
+@permission_classes([IsNurse,IsAdmin])
 @api_view(['GET'])
 def get_all_qr_codes(request):
     qr_codes = QRCode.objects.all()
     serializer = QRCodeSerializer(qr_codes, many=True)
     return Response(serializer.data)
 
+@permission_classes([IsNurse,IsAdmin])
 @api_view(['GET'])
 def get_qr_code_by_id(request, pk):
     try:
@@ -265,6 +301,7 @@ def get_qr_code_by_id(request, pk):
     serializer = QRCodeSerializer(qr_code)
     return Response(serializer.data)
 
+@permission_classes([IsNurse])
 @api_view(['DELETE'])
 def delete_qr_code(request, pk):
     try:
