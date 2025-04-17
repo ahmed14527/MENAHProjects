@@ -37,11 +37,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'api',
     'rest_framework',
     'drf_spectacular',
+    'accounts',
+    'api',
+    'drf_yasg',
 ]
-AUTH_USER_MODEL = 'api.User'
+AUTH_USER_MODEL = 'accounts.User'
 
 
 REST_FRAMEWORK = {
@@ -50,6 +52,7 @@ REST_FRAMEWORK = {
         
     ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+
 }
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

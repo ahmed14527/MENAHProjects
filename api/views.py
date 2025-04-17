@@ -1,82 +1,276 @@
-from rest_framework import viewsets, permissions, filters
-from django_filters.rest_framework import DjangoFilterBackend
-from .models import MilkRecord, QRCode, Message, LoginHistory
-from .serializers import MilkRecordSerializer, QRCodeSerializer, MessageSerializer, LoginHistorySerializer
-from .permissions import IsNurse, IsAdmin, IsParent
-from rest_framework import generics
-from rest_framework.permissions import AllowAny
-from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .serializers import RegisterSerializer
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
-
-class MilkRecordViewSet(viewsets.ModelViewSet):
-    queryset = MilkRecord.objects.all()
-    serializer_class = MilkRecordSerializer
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['baby_name', 'date_given']
-    search_fields = ['baby_name']
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        user = self.request.user
-        if user.role == 'nurse':
-            return MilkRecord.objects.filter(nurse=user)
-        elif user.role == 'parent':
-            return MilkRecord.objects.all()
-        elif user.role == 'admin':
-            return MilkRecord.objects.all()
-        return MilkRecord.objects.none()
-
-    def perform_create(self, serializer):
-        serializer.save(nurse=self.request.user)
-
-class QRCodeViewSet(viewsets.ModelViewSet):
-    queryset = QRCode.objects.all()
-    serializer_class = QRCodeSerializer
-
-    def get_permissions(self):
-        if self.action == 'create':
-            return [IsNurse()]
-        return [permissions.IsAuthenticated()]
-
-    def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
-
-class MessageViewSet(viewsets.ModelViewSet):
-    queryset = Message.objects.all()
-    serializer_class = MessageSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        user = self.request.user
-        return Message.objects.filter(recipient=user) | Message.objects.filter(sender=user)
-
-    def perform_create(self, serializer):
-        serializer.save(sender=self.request.user)
-
-class LoginHistoryViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = LoginHistorySerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return LoginHistory.objects.filter(user=self.request.user)
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .models import Baby, FacePhoto, FootPrint, RetinaPrint, MotherID, Mother, Nurse, Parent
+from .serializers import BabySerializer, FacePhotoSerializer, FootPrintSerializer, RetinaPrintSerializer, MotherIDSerializer, MotherSerializer, NurseSerializer, ParentSerializer
+from .models import QRCode
+from .serializers import QRCodeSerializer
+# --- Baby Views ---
+@api_view(['POST'])
+def create_baby(request):
+    if request.method == 'POST':
+        serializer = BabySerializer(data=request.data)
+        if serializer.is_valid():
+            new_baby = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# Authentication Views
-class RegisterView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    permission_classes = [AllowAny]
-    serializer_class = RegisterSerializer
+# --- FacePhoto Views ---
+@api_view(['POST'])
+def upload_face_photo(request):
+    if request.method == 'POST':
+        serializer = FacePhotoSerializer(data=request.data)
+        if serializer.is_valid():
+            new_photo = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    def validate(self, attrs):
-        data = super().validate(attrs)
-        data['role'] = self.user.role
-        data['username'] = self.user.username
-        return data
+@api_view(['GET'])
+def get_all_face_photos(request):
+    if request.method == 'GET':
+        photos = FacePhoto.objects.all()
+        serializer = FacePhotoSerializer(photos, many=True)
+        return Response(serializer.data)
 
-class CustomTokenObtainPairView(TokenObtainPairView):
-    serializer_class = CustomTokenObtainPairSerializer
+@api_view(['GET'])
+def get_face_photo(request, photo_id):
+    try:
+        photo = FacePhoto.objects.get(id=photo_id)
+    except FacePhoto.DoesNotExist:
+        return Response({"message": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = FacePhotoSerializer(photo)
+        return Response(serializer.data)
+
+@api_view(['DELETE'])
+def delete_face_photo(request, photo_id):
+    try:
+        photo = FacePhoto.objects.get(id=photo_id)
+    except FacePhoto.DoesNotExist:
+        return Response({"message": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'DELETE':
+        photo.delete()
+        return Response({"message": "Deleted successfully"})
+
+
+# --- FootPrint Views ---
+@api_view(['POST'])
+def upload_foot_print(request):
+    if request.method == 'POST':
+        serializer = FootPrintSerializer(data=request.data)
+        if serializer.is_valid():
+            new_record = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# --- RetinaPrint Views ---
+@api_view(['POST'])
+def upload_retina_print(request):
+    if request.method == 'POST':
+        serializer = RetinaPrintSerializer(data=request.data)
+        if serializer.is_valid():
+            new_record = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# --- MotherID Views ---
+@api_view(['POST'])
+def upload_mother_id(request):
+    if request.method == 'POST':
+        serializer = MotherIDSerializer(data=request.data)
+        if serializer.is_valid():
+            new_id = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# --- Mother Views ---
+@api_view(['POST'])
+def create_mother(request):
+    if request.method == 'POST':
+        serializer = MotherSerializer(data=request.data)
+        if serializer.is_valid():
+            new_mother = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_all_mothers(request):
+    if request.method == 'GET':
+        mothers = Mother.objects.all()
+        serializer = MotherSerializer(mothers, many=True)
+        return Response(serializer.data)
+
+@api_view(['GET'])
+def get_mother_by_id(request, pk):
+    try:
+        mother = Mother.objects.get(pk=pk)
+    except Mother.DoesNotExist:
+        return Response({"message": "Mother not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = MotherSerializer(mother)
+        return Response(serializer.data)
+
+@api_view(['PUT'])
+def update_mother(request, pk):
+    try:
+        mother = Mother.objects.get(pk=pk)
+    except Mother.DoesNotExist:
+        return Response({"message": "Mother not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'PUT':
+        serializer = MotherSerializer(mother, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+def delete_mother(request, pk):
+    try:
+        mother = Mother.objects.get(pk=pk)
+    except Mother.DoesNotExist:
+        return Response({"message": "Mother not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'DELETE':
+        mother.delete()
+        return Response({"message": "Mother deleted"}, status=status.HTTP_204_NO_CONTENT)
+
+
+# --- Nurse Views ---
+@api_view(['POST'])
+def create_nurse(request):
+    if request.method == 'POST':
+        serializer = NurseSerializer(data=request.data)
+        if serializer.is_valid():
+            nurse = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_all_nurses(request):
+    if request.method == 'GET':
+        nurses = Nurse.objects.all()
+        serializer = NurseSerializer(nurses, many=True)
+        return Response(serializer.data)
+
+@api_view(['PATCH'])
+def approve_nurse(request, pk):
+    try:
+        nurse = Nurse.objects.get(pk=pk)
+    except Nurse.DoesNotExist:
+        return Response({"message": "Nurse not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'PATCH':
+        nurse.approved = True
+        nurse.save()
+        serializer = NurseSerializer(nurse)
+        return Response(serializer.data)
+
+@api_view(['DELETE'])
+def delete_nurse(request, pk):
+    try:
+        nurse = Nurse.objects.get(pk=pk)
+    except Nurse.DoesNotExist:
+        return Response({"message": "Nurse not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'DELETE':
+        nurse.delete()
+        return Response({"message": "Nurse deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+
+# --- Parent Views ---
+@api_view(['POST'])
+def create_parent(request):
+    if request.method == 'POST':
+        serializer = ParentSerializer(data=request.data)
+        if serializer.is_valid():
+            parent = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_all_parents(request):
+    if request.method == 'GET':
+        parents = Parent.objects.all()
+        serializer = ParentSerializer(parents, many=True)
+        return Response(serializer.data)
+
+@api_view(['GET'])
+def get_parent_by_id(request, pk):
+    try:
+        parent = Parent.objects.get(pk=pk)
+    except Parent.DoesNotExist:
+        return Response({"error": "Parent not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        serializer = ParentSerializer(parent)
+        return Response(serializer.data)
+
+@api_view(['PUT'])
+def update_parent(request, pk):
+    try:
+        parent = Parent.objects.get(pk=pk)
+    except Parent.DoesNotExist:
+        return Response({"error": "Parent not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'PUT':
+        serializer = ParentSerializer(parent, data=request.data)
+        if serializer.is_valid():
+            updated_parent = serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+def delete_parent(request, pk):
+    try:
+        parent = Parent.objects.get(pk=pk)
+    except Parent.DoesNotExist:
+        return Response({"error": "Parent not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'DELETE':
+        parent.delete()
+        return Response({"message": "Parent profile deleted"}, status=status.HTTP_204_NO_CONTENT)
+
+
+
+
+@api_view(['POST'])
+def create_qr_code(request):
+    serializer = QRCodeSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_all_qr_codes(request):
+    qr_codes = QRCode.objects.all()
+    serializer = QRCodeSerializer(qr_codes, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def get_qr_code_by_id(request, pk):
+    try:
+        qr_code = QRCode.objects.get(pk=pk)
+    except QRCode.DoesNotExist:
+        return Response({"error": "QR Code not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = QRCodeSerializer(qr_code)
+    return Response(serializer.data)
+
+@api_view(['DELETE'])
+def delete_qr_code(request, pk):
+    try:
+        qr_code = QRCode.objects.get(pk=pk)
+    except QRCode.DoesNotExist:
+        return Response({"error": "QR Code not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    qr_code.delete()
+    return Response({"message": "QR Code deleted"}, status=status.HTTP_204_NO_CONTENT)
