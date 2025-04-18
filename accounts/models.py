@@ -1,17 +1,17 @@
-from django.db import models
 from django.contrib.auth.models import AbstractUser
-import uuid
+from django.db import models
 
-ROLE_CHOICES = (
-    ('admin', 'Admin'),
-    ('nurse', 'Nurse'),
-    ('parent', 'Parent'),
-)
+class CustomUser(AbstractUser):
+    class Role(models.TextChoices):
+        ADMIN = 'Admin', 'Admin'
+        NURSE = 'Nurse', 'Nurse'
+        PARENT = 'Parent', 'Parent'
 
-class User(AbstractUser):
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    role = models.CharField(max_length=10, choices=Role.choices)
+    phone = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(unique=True)
+    picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
+    address = models.TextField(blank=True)
 
-
-
-
-    
+    def __str__(self):
+        return self.username

@@ -43,7 +43,9 @@ INSTALLED_APPS = [
     'api',
     'drf_yasg',
 ]
-AUTH_USER_MODEL = 'accounts.User'
+
+
+AUTH_USER_MODEL = 'accounts.CustomUser'
 
 
 REST_FRAMEWORK = {
