@@ -1,66 +1,67 @@
 from rest_framework import serializers
 from .models import (
-    Baby,
-    FacePhoto,
-    FootPrint,
-    RetinaPrint,
-    MotherID,
-    Mother,
-    Nurse,
-    Parent,
-    QRCode
+    Baby, BabyFacePhoto, BabyFootPrint, BabyRetinaPrint,
+    MotherInfo, MotherID, BottleQRCode, EBMBottle,
+    EBMUse, Verification
 )
 
-# Baby Serializer
 class BabySerializer(serializers.ModelSerializer):
     class Meta:
         model = Baby
         fields = '__all__'
 
-# FacePhoto Serializer
-class FacePhotoSerializer(serializers.ModelSerializer):
+
+class BabyFacePhotoSerializer(serializers.ModelSerializer):
     class Meta:
-        model = FacePhoto
+        model = BabyFacePhoto
         fields = '__all__'
 
-# FootPrint Serializer
-class FootPrintSerializer(serializers.ModelSerializer):
+
+class BabyFootPrintSerializer(serializers.ModelSerializer):
     class Meta:
-        model = FootPrint
+        model = BabyFootPrint
         fields = '__all__'
 
-# RetinaPrint Serializer
-class RetinaPrintSerializer(serializers.ModelSerializer):
+
+class BabyRetinaPrintSerializer(serializers.ModelSerializer):
     class Meta:
-        model = RetinaPrint
+        model = BabyRetinaPrint
         fields = '__all__'
 
-# MotherID Serializer
+
+class MotherInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MotherInfo
+        fields = '__all__'
+
+
 class MotherIDSerializer(serializers.ModelSerializer):
     class Meta:
         model = MotherID
         fields = '__all__'
 
-# Mother Serializer
-class MotherSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Mother
-        fields = '__all__'
 
-# Nurse Serializer
-class NurseSerializer(serializers.ModelSerializer):
+class BottleQRCodeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Nurse
-        fields = '__all__'
-
-# Parent Serializer
-class ParentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Parent
+        model = BottleQRCode
         fields = '__all__'
 
 
-class QRCodeSerializer(serializers.ModelSerializer):
+class EBMBottleSerializer(serializers.ModelSerializer):
     class Meta:
-        model = QRCode
+        model = EBMBottle
+        fields = '__all__'
+
+
+class EBMUseSerializer(serializers.ModelSerializer):
+    discarded_volume_ml = serializers.FloatField(read_only=True)
+
+    class Meta:
+        model = EBMUse
+        fields = '__all__'
+
+
+class VerificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Verification
         fields = '__all__'

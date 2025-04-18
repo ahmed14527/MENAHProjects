@@ -1,156 +1,129 @@
 from django.db import models
+from django.utils.translation import gettext_lazy as _
+import os
 
+# Upload path functions
+def face_photo_upload(instance, filename):
+    ext = filename.split('.')[-1]
+    return f'face_photos/{instance.baby.name}_{instance.baby.mrn}.{ext}'
+
+def footprint_upload(instance, filename):
+    ext = filename.split('.')[-1]
+    return f'foot_prints/{instance.baby.name}_{instance.baby.mrn}.{ext}'
+
+def retina_upload(instance, filename):
+    ext = filename.split('.')[-1]
+    return f'retina_prints/{instance.baby.name}_{instance.baby.mrn}.{ext}'
+
+def mother_id_upload(instance, filename):
+    ext = filename.split('.')[-1]
+    return f'mother_ids/{instance.baby.name}_{instance.baby.mrn}.{ext}'
+
+def qr_code_upload(instance, filename):
+    ext = filename.split('.')[-1]
+    return f'qr_codes/{instance.baby.name}_{instance.baby.mrn}.{ext}'
+
+
+# General Base Model for Baby
 class Baby(models.Model):
-    baby_name = models.CharField(max_length=255, blank=True, null=True)
-    baby_name_arabic = models.CharField(max_length=255, blank=True, null=True)
-    baby_mrn = models.CharField(max_length=100, blank=True, null=True)
-    visit_number = models.CharField(max_length=100, blank=True, null=True)
-    gender = models.CharField(max_length=50, blank=True, null=True)
-    birth_weight = models.FloatField(blank=True, null=True)
-    dob = models.DateField(blank=True, null=True)
-    ga_weeks = models.IntegerField(blank=True, null=True)
-    ga_days = models.IntegerField(blank=True, null=True)
-    passport_id = models.CharField(max_length=100, blank=True, null=True)
-    personal_id = models.CharField(max_length=100, blank=True, null=True)
-    birth_certificate_id = models.CharField(max_length=100, blank=True, null=True)
+    name = models.CharField(max_length=100)
+    mrn = models.CharField(max_length=50, unique=True)
+    date_of_birth = models.DateField()
 
     def __str__(self):
-        return self.baby_name or f"Baby #{self.id}"
+        return f'{self.name} ({self.mrn})'
 
 
-class FacePhoto(models.Model):
-    baby = models.ForeignKey(
-        'Baby', 
-        on_delete=models.CASCADE, 
-        related_name='face_photos'
+# Baby Face Photo
+class BabyFacePhoto(models.Model):
+    baby = models.ForeignKey(Baby, on_delete=models.CASCADE)
+    photo = models.ImageField(upload_to=face_photo_upload)
+    captured_at = models.DateTimeField(auto_now_add=True)
+
+# Baby Footprint
+class BabyFootPrint(models.Model):
+    baby = models.ForeignKey(Baby, on_delete=models.CASCADE)
+    image = models.ImageField(upload_to=footprint_upload)
+    captured_at = models.DateTimeField(auto_now_add=True)
+
+# Baby Retina Print
+class BabyRetinaPrint(models.Model):
+    baby = models.ForeignKey(Baby, on_delete=models.CASCADE)
+    image = models.ImageField(upload_to=retina_upload)
+    captured_at = models.DateTimeField(auto_now_add=True)
+
+# Mother Information
+class MotherInfo(models.Model):
+    baby = models.OneToOneField(Baby, on_delete=models.CASCADE)
+    name_ar = models.CharField(max_length=100)
+    name_en = models.CharField(max_length=100)
+    age = models.PositiveSmallIntegerField()
+    mother_mrn = models.CharField(max_length=50)
+    gravida = models.PositiveSmallIntegerField()
+    para = models.PositiveSmallIntegerField()
+    abortion = models.PositiveSmallIntegerField()
+    delivery_date = models.DateField()
+
+    class DeliveryType(models.TextChoices):
+        NORMAL = 'Normal', _('Normal Vaginal Delivery')
+        C_SECTION = 'C-Section', _('C-Section')
+
+    delivery_type = models.CharField(
+        max_length=10,
+        choices=DeliveryType.choices,
+        default=DeliveryType.NORMAL
     )
-    photo_path = models.CharField(max_length=500)
-    uploaded_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"FacePhoto for {self.baby} uploaded at {self.uploaded_at}"
-    
-    
-class FootPrint(models.Model):
-    baby = models.ForeignKey(
-        'Baby',
-        on_delete=models.CASCADE,
-        related_name='foot_prints'
-    )
-    image_path = models.CharField(max_length=500)
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"FootPrint for {self.baby} uploaded at {self.uploaded_at}"
-    
-    
-class Mother(models.Model):
-    mother_name = models.CharField(max_length=255)
-    mother_id = models.CharField(max_length=100, unique=True)
-    nationality = models.CharField(max_length=100, blank=True, null=True)
-    contact_number = models.CharField(max_length=20, blank=True, null=True)
-    email = models.EmailField(blank=True, null=True)
-    address = models.TextField(blank=True, null=True)
-    date_of_birth = models.DateField(blank=True, null=True)
-    blood_group = models.CharField(max_length=10, blank=True, null=True)
-    medical_history = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.mother_name
-    
-    
-class MotherFingerPrint(models.Model):
-    mother = models.ForeignKey(
-        'Mother',
-        on_delete=models.CASCADE,
-        related_name='fingerprints'
-    )
-    image_path = models.CharField(max_length=500)
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Fingerprint for {self.mother} uploaded at {self.uploaded_at}"
-    
+# Mother ID Scan
 class MotherID(models.Model):
-    ID_TYPE_CHOICES = [
-        ("National ID", "National ID"),
-        ("Passport", "Passport"),
-        ("Resident ID", "Resident ID"),
-    ]
+    baby = models.OneToOneField(Baby, on_delete=models.CASCADE)
+    id_image = models.ImageField(upload_to=mother_id_upload)
+    scanned_at = models.DateTimeField(auto_now_add=True)
 
-    mother = models.ForeignKey(
-        'Mother',
-        on_delete=models.CASCADE,
-        related_name='ids'
-    )
-    id_type = models.CharField(max_length=20, choices=ID_TYPE_CHOICES)
-    id_number = models.CharField(max_length=100)
-    id_image_path = models.CharField(max_length=500, blank=True, null=True)
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.id_type} - {self.id_number} for {self.mother}"
-    
-    
-    
-class Nurse(models.Model):
-    full_name = models.CharField(max_length=255)
-    license_number = models.CharField(max_length=100, unique=True)
-    hospital = models.CharField(max_length=255)
-    department = models.CharField(max_length=255, blank=True, null=True)
-    username = models.CharField(max_length=150, unique=True)
-    password = models.CharField(max_length=255)  # يفضل استخدام نظام التوثيق المدمج في Django
-    approved = models.BooleanField(default=False)
+# QR Code for bottle
+class BottleQRCode(models.Model):
+    baby = models.ForeignKey(Baby, on_delete=models.CASCADE)
+    bottle_number = models.PositiveIntegerField()
+    unique_number = models.CharField(max_length=100, unique=True)
+    qr_code_image = models.ImageField(upload_to=qr_code_upload)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return self.full_name
-    
-    
-class Parent(models.Model):
-    RELATION_CHOICES = [
-        ("Mother", "Mother"),
-        ("Father", "Father"),
-        ("Guardian", "Guardian"),
-    ]
-
-    full_name = models.CharField(max_length=255)
-    relation_to_baby = models.CharField(max_length=20, choices=RELATION_CHOICES)
-    national_id = models.CharField(max_length=100, unique=True)
-    contact_number = models.CharField(max_length=20, blank=True, null=True)
-    email = models.EmailField(blank=True, null=True)
-    username = models.CharField(max_length=150, unique=True)
-    password = models.CharField(max_length=255)  # يُفضل تشفيرها أو استخدام نظام تسجيل دخول جاهز
-    approved = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
+# EBM Delivery Record
+class EBMBottle(models.Model):
+    baby = models.ForeignKey(Baby, on_delete=models.CASCADE)
+    date_expressed = models.DateField()
+    date_delivered = models.DateField()
+    bottle_number = models.PositiveIntegerField()
+    unique_number = models.CharField(max_length=100, unique=True)
+    volume_ml = models.FloatField()
 
     def __str__(self):
-        return self.full_name
-    
-    
-class QRCode(models.Model):
-    baby = models.ForeignKey(
-        'Baby',
-        on_delete=models.CASCADE,
-        related_name='qr_codes'
-    )
-    qr_code_data = models.TextField()
-    qr_code_image_path = models.CharField(max_length=500)
-    generated_at = models.DateTimeField(auto_now_add=True)
+        return f'Bottle_{self.bottle_number}_{self.unique_number}_{self.baby.name}_{self.baby.mrn}'
+
+
+# EBM Use Record
+class EBMUse(models.Model):
+    ebm_bottle = models.ForeignKey(EBMBottle, on_delete=models.CASCADE)
+    volume_used_ml = models.FloatField()
+    discarded_volume_ml = models.FloatField(blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        if self.ebm_bottle:
+            self.discarded_volume_ml = self.ebm_bottle.volume_ml - self.volume_used_ml
+        super().save(*args, **kwargs)
+
+
+# Verification Process
+class Verification(models.Model):
+    nurse1_id = models.CharField(max_length=50)
+    nurse2_id = models.CharField(max_length=50, blank=True, null=True)
+    baby = models.ForeignKey(Baby, on_delete=models.CASCADE)
+    bottle_qr = models.ForeignKey(BottleQRCode, on_delete=models.CASCADE)
+    method_used = models.CharField(max_length=50)  # face, retina, foot, qr_band
+    verified_by_nurse2 = models.BooleanField(default=False)
+    verification_result = models.BooleanField(default=False)
+    verified_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"QR Code for {self.baby} generated at {self.generated_at}"
-    
-    
-class RetinaPrint(models.Model):
-    baby = models.ForeignKey(
-        'Baby',
-        on_delete=models.CASCADE,
-        related_name='retina_prints'
-    )
-    image_path = models.CharField(max_length=500)
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"RetinaPrint for {self.baby} uploaded at {self.uploaded_at}"
+        return f'Verification for {self.baby.name} by {self.nurse1_id}'

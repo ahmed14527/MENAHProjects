@@ -1,19 +1,20 @@
-from rest_framework.permissions import BasePermission, SAFE_METHODS
+from rest_framework import permissions
 
-class IsNurse(BasePermission):
+class IsAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user and request.user.role == 'nurse'
+        return request.user.is_authenticated and request.user.role == 'Admin'
 
-class IsAdmin(BasePermission):
-    def has_permission(self, request, view):
-        return request.user and request.user.role == 'admin'
 
-class IsParent(BasePermission):
+class IsNurse(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user and request.user.role == 'parent'
+        return request.user.is_authenticated and request.user.role == 'Nurse'
 
-class IsNurseOrReadOnly(BasePermission):
+
+class IsParent(permissions.BasePermission):
     def has_permission(self, request, view):
-        if request.method in SAFE_METHODS:
-            return True
-        return request.user and request.user.role == 'nurse'
+        return request.user.is_authenticated and request.user.role == 'Parent'
+
+
+class IsAdminOrNurse(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role in ['Admin', 'Nurse']
