@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import (
     Baby, BabyFacePhoto, BabyFootPrint, BabyRetinaPrint,
     MotherInfo, MotherID, BottleQRCode, EBMBottle,
-    EBMUse, Verification
+    EBMUse, MilkVerification
 )
 
 class BabySerializer(serializers.ModelSerializer):
@@ -61,7 +61,13 @@ class EBMUseSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class VerificationSerializer(serializers.ModelSerializer):
+
+
+
+class MilkVerificationSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Verification
+        model = MilkVerification
         fields = '__all__'
+        read_only_fields = ['verified', 'status', 'timestamp']
+
+

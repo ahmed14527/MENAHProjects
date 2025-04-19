@@ -1,7 +1,8 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 import os
-
+from django.conf import settings
+from django.core.exceptions import ValidationError
 # Upload path functions
 def face_photo_upload(instance, filename):
     ext = filename.split('.')[-1]
@@ -114,16 +115,45 @@ class EBMUse(models.Model):
 
 
 # Verification Process
-class Verification(models.Model):
-    nurse1_id = models.CharField(max_length=50)
-    nurse2_id = models.CharField(max_length=50, blank=True, null=True)
+
+
+from django.db import models
+from django.conf import settings
+from django.core.exceptions import ValidationError
+
+
+def validate_nurse(user):
+    if user.role != 'Nurse':
+        raise ValidationError("User must be a nurse.")
+
+
+class MilkVerification(models.Model):
     baby = models.ForeignKey(Baby, on_delete=models.CASCADE)
-    bottle_qr = models.ForeignKey(BottleQRCode, on_delete=models.CASCADE)
-    method_used = models.CharField(max_length=50)  # face, retina, foot, qr_band
-    verified_by_nurse2 = models.BooleanField(default=False)
-    verification_result = models.BooleanField(default=False)
-    verified_at = models.DateTimeField(auto_now_add=True)
-    notes = models.TextField(blank=True, null=True)
+    bottle = models.ForeignKey(EBMBottle, on_delete=models.CASCADE)
+    nurse_one = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='verifications_as_nurse_one',
+        validators=[validate_nurse]
+    )
+    nurse_two = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='verifications_as_nurse_two',
+        validators=[validate_nurse]
+    )
+    verified = models.BooleanField(default=False)
+    status = models.CharField(
+        max_length=20,
+        choices=[('pending', 'Pending'), ('verified', 'Verified'), ('failed', 'Failed')],
+        default='pending'
+    )
+    match_with_mother = models.BooleanField(default=False)
+    reprint_required = models.BooleanField(default=False)
+    timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'Verification for {self.baby.name} by {self.nurse1_id}'
+        return f"Verification for {self.baby.name_en} - {self.bottle.unique_number}"
