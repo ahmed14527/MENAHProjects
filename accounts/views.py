@@ -8,7 +8,10 @@ from .serializers import RegisterSerializer
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
+from rest_framework import generics, permissions
+from .models import LoginHistory
+from .serializers import LoginHistorySerializer ,UserProfileSerializer
+from api.permissions import IsNurseUser,IsAdminUser
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -36,3 +39,37 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+class LoginHistoryListView(generics.ListAPIView):
+    serializer_class = LoginHistorySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return LoginHistory.objects.filter(user=self.request.user)
+
+class UserProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = UserProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+    def get_object(self):
+        return self.request.user
+    
+    
+    
+
+class AllUserProfilesView(generics.ListAPIView):
+    queryset = CustomUser.objects.all()
+    serializer_class = UserProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminUser]
+    
+    
+class UserProfileDetailView(generics.RetrieveAPIView):
+    queryset = CustomUser.objects.all()
+    serializer_class = UserProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminUser]
+    permission_classes = [IsNurseUser]
+
+    lookup_field = 'id'

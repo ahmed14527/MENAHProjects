@@ -3,8 +3,7 @@ from .models import CustomUser
 from rest_framework import serializers
 from .models import CustomUser
 from django.contrib.auth.password_validation import validate_password
-
-
+from .models import LoginHistory
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -31,3 +30,19 @@ class RegisterSerializer(serializers.ModelSerializer):
         validated_data.pop('password2')
         user = CustomUser.objects.create_user(**validated_data)
         return user
+
+
+
+
+class LoginHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LoginHistory
+        fields = '__all__'
+        read_only_fields = ['user', 'ip_address', 'user_agent', 'login_time']
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'role', 'phone', 'picture', 'address']
+        read_only_fields = ['id', 'username', 'email', 'role']
