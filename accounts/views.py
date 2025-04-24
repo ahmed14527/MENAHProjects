@@ -12,7 +12,9 @@ from rest_framework import generics, permissions
 from .models import LoginHistory
 from .serializers import LoginHistorySerializer ,UserProfileSerializer
 from api.permissions import IsNurseUser,IsAdminUser
-
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
@@ -73,3 +75,30 @@ class UserProfileDetailView(generics.RetrieveAPIView):
     permission_classes = [IsNurseUser]
 
     lookup_field = 'id'
+    
+    
+    
+
+
+class ApproveRejectNurseEmailView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def post(self, request, nurse_id):
+        try:
+            nurse = CustomUser.objects.get(id=nurse_id, role='Nurse')
+        except CustomUser.DoesNotExist:
+            return Response({"detail": "Nurse not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        action = request.data.get('action')
+
+        if action not in ['approve', 'reject']:
+            return Response({"detail": "Invalid action. Use 'approve' or 'reject'."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if action == 'approve':
+            nurse.is_email_approved = True
+            nurse.save()
+            return Response({"detail": "Email approved successfully."}, status=status.HTTP_200_OK)
+        elif action == 'reject':
+            nurse.is_email_approved = False
+            nurse.save()
+            return Response({"detail": "Email rejected successfully."}, status=status.HTTP_200_OK)

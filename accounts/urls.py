@@ -9,7 +9,8 @@ from .views import (
     LoginHistoryListView,
     UserProfileView,
     AllUserProfilesView,
-    UserProfileDetailView
+    UserProfileDetailView,
+    ApproveRejectNurseEmailView
 )
 
 # Initialize the router and register viewsets
@@ -26,6 +27,8 @@ urlpatterns = [
     path('profile/', UserProfileView.as_view(), name='user-profile'),
     path('profiles/', AllUserProfilesView.as_view(), name='all-user-profiles'),
     path('profiles/<int:id>/', UserProfileDetailView.as_view(), name='user-profile-detail'),
+    path('approve-reject-nurse-email/<int:nurse_id>/', ApproveRejectNurseEmailView.as_view(), name='approve_reject_nurse_email'),
+
 
 
 ]

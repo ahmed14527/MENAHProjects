@@ -61,9 +61,6 @@ class EBMUseSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-
-
-
 class MilkVerificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = MilkVerification
