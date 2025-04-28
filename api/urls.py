@@ -12,9 +12,15 @@ from .views import (
     BottleQRCodeViewSet,
     EBMBottleViewSet,
     EBMUseViewSet,
+    StartMilkVerificationView,
+    VerifyWithMotherIDView,
+    NurseTwoVerifyView,
+    VerifyFootprintWithQRCodeView,
+    VerifyFaceWithQRCodeView,
+    VerifyRetinaWithQRCodeView,
+    VerifyMotherFingerprintOrIDView
 )
 
-from .views import StartMilkVerificationView, VerifyWithMotherIDView, NurseTwoVerifyView
 
 
 # DRF Router
@@ -32,7 +38,12 @@ router.register(r'ebm-use', EBMUseViewSet)
 # URL Patterns
 urlpatterns = [
     path('', include(router.urls)),
-    path('milk/start-verification/', StartMilkVerificationView.as_view(), name='start-milk-verification'),
-    path('milk/verify-mother-id/', VerifyWithMotherIDView.as_view(), name='verify-with-mother-id'),
-    path('milk/verify-second-nurse/<int:verification_id>/', NurseTwoVerifyView.as_view(), name='nurse-two-verify'),
+    path('start-verification/', StartMilkVerificationView.as_view(), name='start_milk_verification'),
+    path('verify-with-mother-id/', VerifyWithMotherIDView.as_view(), name='verify_with_mother_id'),
+    path('nurse-two-verify/<int:verification_id>/', NurseTwoVerifyView.as_view(), name='nurse_two_verify'),
+
+    path('verify-footprint-qr/', VerifyFootprintWithQRCodeView.as_view(), name='verify_footprint_qr'),
+    path('verify-face-qr/', VerifyFaceWithQRCodeView.as_view(), name='verify_face_qr'),
+    path('verify-retina-qr/', VerifyRetinaWithQRCodeView.as_view(), name='verify_retina_qr'),
+    path('verify-mother-id-fingerprint/', VerifyMotherFingerprintOrIDView.as_view(), name='verify_mother_id_fingerprint'),
 ]

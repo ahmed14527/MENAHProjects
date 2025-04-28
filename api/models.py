@@ -151,9 +151,12 @@ class MilkVerification(models.Model):
         choices=[('pending', 'Pending'), ('verified', 'Verified'), ('failed', 'Failed')],
         default='pending'
     )
-    match_with_mother = models.BooleanField(default=False)
-    reprint_required = models.BooleanField(default=False)
+    verify_face_with_qr = models.BooleanField(default=False)
+    verify_footprint_with_qr = models.BooleanField(default=False)
+    verify_retina_with_qr = models.BooleanField(default=False)
+    verify_mother_id_or_fingerprint = models.BooleanField(default=False)
+
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Verification for {self.baby.name_en} - {self.bottle.unique_number}"
+        return f"Verification for {self.baby.name} - {self.bottle.unique_number}"

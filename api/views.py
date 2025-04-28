@@ -1,34 +1,22 @@
-from rest_framework import viewsets, throttling
-from rest_framework.permissions import SAFE_METHODS
+# Imports
+from rest_framework import viewsets, throttling, status
+from rest_framework.permissions import IsAuthenticated, SAFE_METHODS
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+
 from .models import (
     Baby, BabyFacePhoto, BabyFootPrint, BabyRetinaPrint,
     MotherInfo, MotherID, BottleQRCode, EBMBottle,
-    EBMUse
+    EBMUse, MilkVerification
 )
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from django.shortcuts import get_object_or_404
-
-from .models import MilkVerification
-from .serializers import MilkVerificationSerializer
-
-from .models import Baby
-from .models import EBMBottle
-from rest_framework.response import Response
-from rest_framework import status
-from django.shortcuts import get_object_or_404
-from rest_framework.views import APIView
-
 from .serializers import (
     BabySerializer, BabyFacePhotoSerializer, BabyFootPrintSerializer, BabyRetinaPrintSerializer,
     MotherInfoSerializer, MotherIDSerializer, BottleQRCodeSerializer, EBMBottleSerializer,
-    EBMUseSerializer
+    EBMUseSerializer, MilkVerificationSerializer
 )
 
-from .models import EBMBottle, Baby, MotherInfo
-
-
+# Throttling
 class StandardAnonThrottle(throttling.AnonRateThrottle):
     rate = '10/minute'
 
@@ -38,6 +26,8 @@ class StandardUserThrottle(throttling.UserRateThrottle):
 class ThrottleMixin:
     throttle_classes = [StandardAnonThrottle, StandardUserThrottle]
 
+
+# ViewSets
 class BabyViewSet(ThrottleMixin, viewsets.ModelViewSet):
     queryset = Baby.objects.all()
     serializer_class = BabySerializer
@@ -47,7 +37,7 @@ class BabyViewSet(ThrottleMixin, viewsets.ModelViewSet):
             return ['id', 'mother_id', 'name']
         elif self.request.user.is_nurse:
             return ['id', 'mother_id']
-        return []  
+        return []
 
 class BabyFacePhotoViewSet(ThrottleMixin, viewsets.ModelViewSet):
     queryset = BabyFacePhoto.objects.all()
@@ -62,7 +52,7 @@ class BabyFootPrintViewSet(ThrottleMixin, viewsets.ModelViewSet):
             return ['id', 'baby_id', 'footprint_type']
         elif self.request.user.is_nurse:
             return ['baby_id']
-        return []  
+        return []
 
 class BabyRetinaPrintViewSet(ThrottleMixin, viewsets.ModelViewSet):
     queryset = BabyRetinaPrint.objects.all()
@@ -73,7 +63,7 @@ class BabyRetinaPrintViewSet(ThrottleMixin, viewsets.ModelViewSet):
             return ['id', 'baby_id', 'retina_type']
         elif self.request.user.is_nurse:
             return ['baby_id']
-        return []  
+        return []
 
 class MotherInfoViewSet(ThrottleMixin, viewsets.ModelViewSet):
     queryset = MotherInfo.objects.all()
@@ -84,7 +74,7 @@ class MotherInfoViewSet(ThrottleMixin, viewsets.ModelViewSet):
             return ['id', 'mother_name', 'mother_id']
         elif self.request.user.is_nurse:
             return ['mother_id']
-        return [] 
+        return []
 
 class MotherIDViewSet(ThrottleMixin, viewsets.ModelViewSet):
     queryset = MotherID.objects.all()
@@ -95,7 +85,7 @@ class MotherIDViewSet(ThrottleMixin, viewsets.ModelViewSet):
             return ['id', 'mother_id']
         elif self.request.user.is_nurse:
             return ['mother_id']
-        return []  
+        return []
 
 class BottleQRCodeViewSet(ThrottleMixin, viewsets.ModelViewSet):
     queryset = BottleQRCode.objects.all()
@@ -110,14 +100,15 @@ class EBMBottleViewSet(ThrottleMixin, viewsets.ModelViewSet):
             return ['id', 'ebm_bottle_id', 'baby_id']
         elif self.request.user.is_nurse:
             return ['baby_id']
-        return []  
+        return []
 
 class EBMUseViewSet(ThrottleMixin, viewsets.ModelViewSet):
     queryset = EBMUse.objects.all()
     serializer_class = EBMUseSerializer
 
 
-class StartMilkVerificationView(ThrottleMixin,APIView):
+# Milk Verification Views
+class StartMilkVerificationView(ThrottleMixin, APIView):
 
     def post(self, request):
         data = request.data
@@ -139,7 +130,7 @@ class StartMilkVerificationView(ThrottleMixin,APIView):
         })
 
 
-class VerifyWithMotherIDView(ThrottleMixin,APIView):
+class VerifyWithMotherIDView(ThrottleMixin, APIView):
 
     def post(self, request):
         data = request.data
@@ -172,7 +163,7 @@ class VerifyWithMotherIDView(ThrottleMixin,APIView):
             }, status=403)
 
 
-class NurseTwoVerifyView(ThrottleMixin,APIView):
+class NurseTwoVerifyView(ThrottleMixin, APIView):
 
     def post(self, request, verification_id):
         verification = get_object_or_404(MilkVerification, id=verification_id)
@@ -192,3 +183,71 @@ class NurseTwoVerifyView(ThrottleMixin,APIView):
             "message": "✅ Milk verified successfully. It is safe to feed the baby.",
             "verified": True
         })
+
+
+# New Verifications (Footprint, Face, Retina, Mother ID)
+class VerifyFootprintWithQRCodeView(ThrottleMixin, APIView):
+
+    def post(self, request):
+        baby_id = request.data.get('baby_id')
+        qr_unique_number = request.data.get('qr_unique_number')
+
+        baby = get_object_or_404(Baby, id=baby_id)
+        footprint = BabyFootPrint.objects.filter(baby=baby).last()
+        bottle_qr = EBMBottle.objects.filter(unique_number=qr_unique_number, baby=baby).last()
+
+        if footprint and bottle_qr:
+            return Response({"message": "✅ Baby footprint and QR code match found.", "matched": True})
+        else:
+            return Response({"message": "❌ Footprint or QR code does not match.", "matched": False}, status=400)
+
+
+class VerifyFaceWithQRCodeView(ThrottleMixin, APIView):
+
+    def post(self, request):
+        baby_id = request.data.get('baby_id')
+        qr_unique_number = request.data.get('qr_unique_number')
+
+        baby = get_object_or_404(Baby, id=baby_id)
+        face_photo = BabyFacePhoto.objects.filter(baby=baby).last()
+        bottle_qr = EBMBottle.objects.filter(unique_number=qr_unique_number, baby=baby).last()
+
+        if face_photo and bottle_qr:
+            return Response({"message": "✅ Baby face photo and QR code match found.", "matched": True})
+        else:
+            return Response({"message": "❌ Face photo or QR code does not match.", "matched": False}, status=400)
+
+
+class VerifyRetinaWithQRCodeView(ThrottleMixin, APIView):
+
+    def post(self, request):
+        baby_id = request.data.get('baby_id')
+        qr_unique_number = request.data.get('qr_unique_number')
+
+        baby = get_object_or_404(Baby, id=baby_id)
+        retina_print = BabyRetinaPrint.objects.filter(baby=baby).last()
+        bottle_qr = EBMBottle.objects.filter(unique_number=qr_unique_number, baby=baby).last()
+
+        if retina_print and bottle_qr:
+            return Response({"message": "✅ Baby retina print and QR code match found.", "matched": True})
+        else:
+            return Response({"message": "❌ Retina print or QR code does not match.", "matched": False}, status=400)
+
+
+class VerifyMotherFingerprintOrIDView(ThrottleMixin, APIView):
+
+    def post(self, request):
+        baby_id = request.data.get('baby_id')
+        mother_id_provided = request.data.get('mother_id_provided', False)
+        mother_fingerprint_provided = request.data.get('mother_fingerprint_provided', False)
+
+        baby = get_object_or_404(Baby, id=baby_id)
+        mother_id = MotherID.objects.filter(baby=baby).last()
+
+        if mother_id_provided or mother_fingerprint_provided:
+            if mother_id:
+                return Response({"message": "✅ Mother identity or fingerprint verified.", "matched": True})
+            else:
+                return Response({"message": "❌ No mother ID found for verification.", "matched": False}, status=400)
+        else:
+            return Response({"message": "❌ No verification data provided.", "matched": False}, status=400)
