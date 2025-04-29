@@ -4,6 +4,9 @@ from rest_framework.permissions import IsAuthenticated, SAFE_METHODS
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from rest_framework import generics
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
 
 from .models import (
     Baby, BabyFacePhoto, BabyFootPrint, BabyRetinaPrint,
@@ -13,8 +16,16 @@ from .models import (
 from .serializers import (
     BabySerializer, BabyFacePhotoSerializer, BabyFootPrintSerializer, BabyRetinaPrintSerializer,
     MotherInfoSerializer, MotherIDSerializer, BottleQRCodeSerializer, EBMBottleSerializer,
-    EBMUseSerializer, MilkVerificationSerializer
+    MilkVerificationSerializer,EBMUseSerializer
 )
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404
+from django.db.models import Sum
+
+from .models import Baby, EBMBottle, EBMUse
+from .serializers import EBMUseStatsSerializer
 
 # Throttling
 class StandardAnonThrottle(throttling.AnonRateThrottle):
@@ -31,13 +42,10 @@ class ThrottleMixin:
 class BabyViewSet(ThrottleMixin, viewsets.ModelViewSet):
     queryset = Baby.objects.all()
     serializer_class = BabySerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter]
 
     def get_search_fields(self):
-        if self.request.user.is_admin:
-            return ['id', 'mother_id', 'name']
-        elif self.request.user.is_nurse:
-            return ['id', 'mother_id']
-        return []
+        return ['id', 'mrn', 'name_en', 'name_ar']
 
 class BabyFacePhotoViewSet(ThrottleMixin, viewsets.ModelViewSet):
     queryset = BabyFacePhoto.objects.all()
@@ -47,45 +55,25 @@ class BabyFootPrintViewSet(ThrottleMixin, viewsets.ModelViewSet):
     queryset = BabyFootPrint.objects.all()
     serializer_class = BabyFootPrintSerializer
 
-    def get_search_fields(self):
-        if self.request.user.is_admin:
-            return ['id', 'baby_id', 'footprint_type']
-        elif self.request.user.is_nurse:
-            return ['baby_id']
-        return []
+    
 
 class BabyRetinaPrintViewSet(ThrottleMixin, viewsets.ModelViewSet):
     queryset = BabyRetinaPrint.objects.all()
     serializer_class = BabyRetinaPrintSerializer
 
-    def get_search_fields(self):
-        if self.request.user.is_admin:
-            return ['id', 'baby_id', 'retina_type']
-        elif self.request.user.is_nurse:
-            return ['baby_id']
-        return []
+    
 
 class MotherInfoViewSet(ThrottleMixin, viewsets.ModelViewSet):
     queryset = MotherInfo.objects.all()
     serializer_class = MotherInfoSerializer
 
-    def get_search_fields(self):
-        if self.request.user.is_admin:
-            return ['id', 'mother_name', 'mother_id']
-        elif self.request.user.is_nurse:
-            return ['mother_id']
-        return []
+    
 
 class MotherIDViewSet(ThrottleMixin, viewsets.ModelViewSet):
     queryset = MotherID.objects.all()
     serializer_class = MotherIDSerializer
 
-    def get_search_fields(self):
-        if self.request.user.is_admin:
-            return ['id', 'mother_id']
-        elif self.request.user.is_nurse:
-            return ['mother_id']
-        return []
+    
 
 class BottleQRCodeViewSet(ThrottleMixin, viewsets.ModelViewSet):
     queryset = BottleQRCode.objects.all()
@@ -95,16 +83,42 @@ class EBMBottleViewSet(ThrottleMixin, viewsets.ModelViewSet):
     queryset = EBMBottle.objects.all()
     serializer_class = EBMBottleSerializer
 
-    def get_search_fields(self):
-        if self.request.user.is_admin:
-            return ['id', 'ebm_bottle_id', 'baby_id']
-        elif self.request.user.is_nurse:
-            return ['baby_id']
-        return []
-
+    
 class EBMUseViewSet(ThrottleMixin, viewsets.ModelViewSet):
     queryset = EBMUse.objects.all()
     serializer_class = EBMUseSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+
+    def get_search_fields(self):
+        return ['id', 'ebm_bottle__id', 'volume_used_ml']
+    
+    
+    
+
+class BabyEBMUseStatsAPIView(APIView):
+
+    def get(self, request, baby_id, *args, **kwargs):
+        baby = get_object_or_404(Baby, id=baby_id)
+
+        bottles = EBMBottle.objects.filter(baby=baby)
+
+        uses = EBMUse.objects.filter(ebm_bottle__in=bottles)
+
+        total_used_bottles = uses.count()
+        total_volume_used = uses.aggregate(total=Sum('volume_used_ml'))['total'] or 0
+        total_milk_discards = uses.filter(discarded_volume_ml__gt=0).count()
+        total_variable_ebm_bottles = bottles.filter(variable_volume=True).count()
+
+        stats = {
+            "total_used_bottles": total_used_bottles,
+            "total_volume_used": total_volume_used,
+            "total_milk_discards": total_milk_discards,
+            "total_variable_ebm_bottles": total_variable_ebm_bottles,
+        }
+
+        serializer = EBMUseStatsSerializer(stats)
+        return Response(serializer.data)
+
 
 
 # Milk Verification Views

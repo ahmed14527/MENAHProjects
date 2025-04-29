@@ -53,12 +53,28 @@ class EBMBottleSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class EBMUseSerializer(serializers.ModelSerializer):
-    discarded_volume_ml = serializers.FloatField(read_only=True)
 
+class EBMUseCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EBMUse
+        fields = ['ebm_bottle', 'volume_used_ml']
+
+    def create(self, validated_data):
+        return EBMUse.objects.create(**validated_data)
+    
+    
+class EBMUseSerializer(serializers.ModelSerializer):
     class Meta:
         model = EBMUse
         fields = '__all__'
+        
+        
+            
+class EBMUseStatsSerializer(serializers.Serializer):
+    total_used_bottles = serializers.IntegerField()
+    total_volume_used = serializers.FloatField()
+    total_milk_discards = serializers.IntegerField()
+    total_variable_ebm_bottles = serializers.IntegerField()
 
 
 class MilkVerificationSerializer(serializers.ModelSerializer):

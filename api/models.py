@@ -3,6 +3,9 @@ from django.utils.translation import gettext_lazy as _
 import os
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db import models
+from django.conf import settings
+from django.core.exceptions import ValidationError
 # Upload path functions
 def face_photo_upload(instance, filename):
     ext = filename.split('.')[-1]
@@ -27,12 +30,30 @@ def qr_code_upload(instance, filename):
 
 # General Base Model for Baby
 class Baby(models.Model):
-    name = models.CharField(max_length=100)
-    mrn = models.CharField(max_length=50, unique=True)
-    date_of_birth = models.DateField()
+    GENDER_CHOICES = (
+        ('male', 'Male'),
+        ('female', 'Female'),
+    )
+
+    name_en = models.CharField(max_length=100)  
+    name_ar = models.CharField(max_length=100)  
+    mrn = models.CharField(max_length=50, unique=True)  
+    visit_number = models.CharField(max_length=50)  
+    passport_or_id = models.CharField(max_length=50)  
+    birth_certificate_id = models.CharField(max_length=50)  
+
+    date_of_birth = models.DateField()  
+    current_date = models.DateField() 
+    days_of_life = models.IntegerField()  
+
+    gestational_age_at_birth = models.IntegerField(help_text="Gestational age at birth in weeks")  # Gestational Age at Birth
+    corrected_gestational_age = models.IntegerField(help_text="Corrected gestational age in weeks")  # Corrected Gestational Age (CGA)
+
+    gender = models.CharField(max_length=6, choices=GENDER_CHOICES)  
+    birth_weight = models.FloatField(help_text="Birth weight in grams")  
 
     def __str__(self):
-        return f'{self.name} ({self.mrn})'
+        return f'{self.name_en} ({self.mrn})'
 
 
 # Baby Face Photo
@@ -92,6 +113,7 @@ class BottleQRCode(models.Model):
 # EBM Delivery Record
 class EBMBottle(models.Model):
     baby = models.ForeignKey(Baby, on_delete=models.CASCADE)
+    order = models.PositiveIntegerField()
     date_expressed = models.DateField()
     date_delivered = models.DateField()
     bottle_number = models.PositiveIntegerField()
@@ -107,21 +129,21 @@ class EBMUse(models.Model):
     ebm_bottle = models.ForeignKey(EBMBottle, on_delete=models.CASCADE)
     volume_used_ml = models.FloatField()
     discarded_volume_ml = models.FloatField(blank=True, null=True)
+    total_used_bottles = models.IntegerField(default=0)
+    total_volume_used = models.FloatField(default=0.0)
+    total_milk_discards = models.IntegerField(default=0)
+    total_variable_ebm_bottles = models.IntegerField(default=0)
 
     def save(self, *args, **kwargs):
         if self.ebm_bottle:
             self.discarded_volume_ml = self.ebm_bottle.volume_ml - self.volume_used_ml
         super().save(*args, **kwargs)
 
+    def __str__(self):
+        return f"EBM Use for Bottle {self.ebm_bottle.id}"
+
 
 # Verification Process
-
-
-from django.db import models
-from django.conf import settings
-from django.core.exceptions import ValidationError
-
-
 def validate_nurse(user):
     if user.role != 'Nurse':
         raise ValidationError("User must be a nurse.")
